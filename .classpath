@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="EPMDUIJFX/src"/>
+	<classpathentry kind="src" path="mockTestObject/src"/>
+	<classpathentry kind="lib" path="EPMDUIJFX/dist/EPMDUIJFX.jar"/>
+	<classpathentry kind="lib" path="EPMDUIJFX/dist/run250257648/EPMDUIJFX.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Cameron/Documents/Programming/Repositories/EPMD Project/sqlite-jdbc-3.28.0.jar"/>
+	<classpathentry kind="output" path="EPMDUIJFX/build/classes"/>
+</classpath>
