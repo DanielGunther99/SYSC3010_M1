@@ -5,6 +5,8 @@
  */
 package epmduijfx;
 
+import java.time.LocalTime;
+
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -13,7 +15,7 @@ import javafx.stage.Stage;
 
 /**
  *
- * @author Daniel
+ * @authors Daniel Gunther, Cameron McFadden
  */
 public class EPMDUIJFX extends Application {
     
@@ -29,11 +31,32 @@ public class EPMDUIJFX extends Application {
         stage.show();
     }
 
-    /**
-     * @param args the command line arguments
-     */
     public static void main(String[] args) {
-        launch(args);
+        //launch(args);
+        
+        MockObject mock = new MockObject(1150);
+        DatabaseHandler db = new DatabaseHandler();
+        
+        db.initDatabase(1);
+        
+        int bpm;
+        int ppm;
+        float latitude;
+        float longitude;
+        LocalTime t;
+        
+        for (int i = 0; i <= 30; i++) {
+        	bpm = mock.getHR();
+        	ppm = mock.getGas();
+        	latitude = mock.getLat();
+        	longitude = mock.getLong();
+        	t = mock.getTime();
+        	
+        	db.add(1, t, bpm, ppm, latitude, longitude);
+        }
+        
+        db.outputTable(1);
+        
     }
     
 }
