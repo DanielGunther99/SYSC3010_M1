@@ -3,41 +3,87 @@
 #21-11-2019
 
 import socket, sys, time, json, sqlite3, datetime
+from uuid import getnode as get_mac
 
 #Connecting to the database and setting up a cursor
 #so data can be stored in the database.
 db = sqlite3.connect("OnBoardEPMD.db")
 cursor = db.cursor()
-"""
-host = sys.argv[1]
-textport = sys.argv[2]
+sendMAC = get_mac()
+
+textport = 2000
 ser = serial.Serial('/dev/ttyACM0', 9600)
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 port = int(textport)
 server_address = (host, port)
 
-while True:
-    data = str(int(ser.readline(),16))
-    print (data)
-    if not len(data):
-        break
-    jfile = json.loads(data)
-
-    break
-"""
-
 # This function initializes the tables in the database if they are not already initialized.
 def setup():
 	try:
-		#Allows the creation of foreign key linked tables.
-		cursor.execute("""PRAGMA foreign_keys = ON;""")
-		#Makes the Personnel and sensorData tables in the database.
-		cursor.execute("""CREATE TABLE IF NOT EXISTS personnel(EPMD_ID INT, personnel_Name TEXT, occupation TEXT, PRIMARY KEY(EPMD_ID));""")
-		cursor.execute("""CREATE TABLE IF NOT EXISTS EPMDInfo(personID INT, currentTime DATE, heartRate FLOAT, GPSData FLOAT, gasVal INT, gasDetected BOOLEAN, FOREIGN  KEY(personID) REFERENCES personnel(EPMD_ID))""")
+		#Makes the data tables in the database.
+		cursor.execute('CREATE TABLE IF NOT EXISTS queueDatabase(sequenceVal INT, packetData INT, PRIMARY KEY(sequenceVal));')
 		db.commit()
 	except:
 		print('Failure while initializing the database')
+	return
 
+#Collects data from the serial input from the arduino.
+def serialDataCollect():
+	data = str(int(ser.readline(),16))
+	return data
+
+#Sends the data to the server Pi.
+def sendData():
+	while true:	
+		cursor.execute('SELECT count(*) FROM queueDatabase;')
+		count = cursor.fetchone()
+		if  count == 0:
+			time.sleep(2)
+			continue
+		else:
+			cursor.execute('SELECT MIN(sequenceVal) FROM queueDatabase;')
+			sendSequenceID = cursor.fetchone()
+			cursor.execute('SELECT packetData FROM queueDatabase WHERE sequenceVal = {id}'.\
+				       format(id = sendSequenceID))
+			sendData = cursor.fetchone()
+			sendPacket = "%s%s%s" % (sendSequenceID, sendMAC, sendData)
+			s.sendto(sendPacket.encode('utf-8'), server_address)	
+			return
+
+#Parses and adds the data
+def parseAdd(packetData):
+	cursor.execute('SELECT MAX(sequenceVal) FROM queueDatabase;')
+	newSequenceID = int(cursor.fetchone()) + 1	
+	cursor.execute('INSERT or IGNORE INTO queueDatabase VALUES(?, ?);',( newSequenceID, packetData)))
+	db.commit()	
+	return
+
+#Receives acknowledgement from the server pi.
+def recieveAck():
+	
+	return
+
+
+
+
+
+
+
+
+
+
+#Test function checking the personnel Table.
+def testPersonnel():
+	cursor.execute("SELECT * FROM personnel;")
+	for row in cursor:
+		print(row)
+	return
+
+#Test function checking the EPMDInfo Table.
+def testEPMDInfo():
+	cursor.execute("SELECT * FROM EPMDInfo;")
+	for row in cursor:
+		print(row)
 	return
 
 #Adds personnel to the database.
@@ -72,36 +118,4 @@ def addEPMDInfo(personID, currentTime, heartRate, GPSData, gasVal, gasDetected):
 	else:
 		cursor.execute('''INSERT INTO EPMDInfo VALUES(?, ?, ?, ? ,? ,?);''',(personID, currentTime, heartRate, GPSData, gasVal, gasDetected))
 		db.commit()		
-	return
-
-#Collects data from the serial input from the arduino.
-def serialDataCollect():
-	ser = serial.Serial('/dev/ttyACM0', 9600)
-	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	data = str(int(ser.readline(),16))
-	return data
-
-#Sends the data to the GUI Pi.
-def sendData(host, textport, data):
-	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	port = int(textport)
-	server_address = (host, port)
-	s.sendto(data.encode('utf-8'), server_address)	
-	return
-#Test function checking the personnel Table.
-def testPersonnel():
-	cursor.execute("SELECT * FROM personnel;")
-	for row in cursor:
-		print(row)
-	return
-
-#Test function checking the EPMDInfo Table.
-def testEPMDInfo():
-	cursor.execute("SELECT * FROM EPMDInfo;")
-	for row in cursor:
-		print(row)
-	return
-
-def parseData(data):
-	
 	return
