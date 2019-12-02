@@ -22,16 +22,17 @@ public class udpSender {
     public udpSender(int port) {
         // Constructor
     	try {
-			socket = new DatagramSocket();
+			socket = new DatagramSocket(port);
 		}  catch (Exception ex) {
             Logger.getLogger(MockObject.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
+
 	void sendPacket(DatagramPacket packet) {
         try {
             socket.send(packet);
-            System.out.println("Packet sent!");
+            System.out.println("Packet sent on " + packet.getPort());
         } catch (IOException ex) {
             Logger.getLogger(udpSender.class.getName()).log(Level.SEVERE, null, ex);
         }
