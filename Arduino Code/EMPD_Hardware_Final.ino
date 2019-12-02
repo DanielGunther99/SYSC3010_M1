@@ -6,9 +6,18 @@
  * to a paired Raspberry Pi for further processing.
  * 
  * played around with fake gps data
+ * ADDING IN TIME FUNCTIONALITY
  * 
- * LAST FILE EDIT: Novemeber, 22,2019
+ * LAST FILE EDIT: December, 2,2019
  */
+//STUB TESTING (SET TO 1 IF USING STUB)
+int smokeTEST = 0;
+int heartTEST = 0;
+int gpsTEST = 0;
+
+//DRIVER TEST
+
+ 
 //ARDUINO ID
 #define ARDUINO_ID 0 //the ID of the arduino being used (Just in case if multiple Arduino's)
  
@@ -22,6 +31,7 @@ int gasSensor = GAS_SENSOR;
 int heartSensor = HEART_SENSOR
 
 //Smoke Sensor Variables
+int smokeReading = 0;
 int smokeDetect;
 
 //Heart Rate Sensor Variables
@@ -37,6 +47,7 @@ int personLat = 0;
 
 //OPCode Variables
 int heartRate = 0;
+unsigned long arduinoRunTime; 
 
 /**
  * SETUP
@@ -61,47 +72,48 @@ void setup() {
  * Variables Input: N/a
  * Variables Output: N/a
  * 
- * LAST EDIT: Novemeber, 18,2019
+ * LAST EDIT: December, 2,2019
  */
 void loop() {
   smokeDetect = Gas_Sensor(); //Smoke Detection Reading
   heartRate = Heart_Rate(); //Heart Rate Reading
   GPS();
-  opCode(arduinoID, smokeDetect, heartRate, personLong, personLat); //Generate OPCODE and send it over the SerialPort
+  arduinoRunTime = millis();
+  opCode(arduinoID, smokeDetect, smokeReading, heartRate, personLong, personLat, arduinoRunTime); //Generate OPCODE and send it over the SerialPort
 }
 
 /**
   * GAS SENSOR:
   * The Gas sensor detects the smoke entering a mask for emergency personel. The sensor takes 20 seconds to turn on.
-  * The sensor currently is detecting smoke and for Debug purposes, it prints via the serial port the current reading and if the 
-  * sensor is reading smoke in the enviroment.
-  * 
+  * The sensor currently is detecting smoke in enviroments and is fully operational.
   * Variables Input: N/a
-  * Variables Output: N/a
+  * Variables Output: Returns 1 if there is smoke detected and returns 0 if there is no smoke.
   * 
-  * LAST EDIT: Novemeber, 11,2019
+  * LAST EDIT: December, 2,2019
   */
 int Gas_Sensor(){
-  smokeDetect = analogRead(gasSensor); //Retrieve a sensor reading from the gasSensor
-  //Serial.println(smokeDetect, DEC); //DEBUG: Display the reading in decimal for what the sensor is outputting (200 IS SMOKE)
-
-  //If the sensor reading is above 200, there is a fire
-  if(smokeDetect >= 200){
-    //Serial.println("SMOKE_DETECTED");//DEBUG: Determine if smoke has been detected (SENSOR IS CURRENTLY WORKING)  
-    return 1;
+  //REAL CODE RUNNING
+  if(smokeTEST == 0)smokeReading = analogRead(gasSensor); //Retrieve a sensor reading from the gasSensor 
+  //STUB CODE RUNNING
+  if(smokeTEST == 1){
+    smokeReading++;
+    if(smokeReading == 201 || smokeReading < 40) smokeReading = 40;
   }
-
+  
+  //If the sensor reading is above 200, there is a fire
+  if(smokeReading >= 200)return 1;
   return 0;
 }
 
 /**
   * HEART RATE SENSOR:
-  * The Heart Sensor...
+  * The Heart Sensor detects the heart rate of the emergency personel. The sensor is currently being delivered
+  * so the stub test is most likely going to run.
   * 
   * Variables Input: N/a
-  * Variables Output: N/a
+  * Variables Output: Returns the current heart rate of the person.
   * 
-  * LAST EDIT: Novemeber, 11,2019
+  * LAST EDIT: December, 2,2019
   */
 int Heart_Rate(){
   currTime = millis();      
@@ -117,7 +129,6 @@ int Heart_Rate(){
     //If sensor picks up reading below threshold (noise)
     if(sensorValue < beatThreshold) beatThreshold = false;
   }
-  //Serial.println(beatCounter);//DEBUG: Determining the HeartRate Reading (SENSOR IS CURRENTLY WORKING)
   return beatCounter;
 }
 
@@ -138,24 +149,35 @@ void GPS(){
 /**
   * OPCODE (UNDER DEVELOPMENT):
   * This function will print out the opcode to the serial port. This will print the 
-  * ArduinoID (0 or 1), gasReading (0 to 900), HeartRate(0 to 200), gpsLong(CURRENTLY JUST 1), gpsLat(CURRENTLY JUST 1),End transmission with 'XXXX'
+  * ArduinoID (0 or 1), HeartRate(0 to 200), gasReading (0 to 900), gpsLat(CURRENTLY JUST 1), gpsLong(CURRENTLY JUST 1)
+  * To seperate the data, there will be dashes in between each element of the opCode
+  * 
   * 
   * Variables Input: 
-  * ArduinoID:
-  * gasRead:
+  * ArduinoID: The ID of the current Ardino so the firefighter can be Identified
+  * gasRead: The reading of the gas sensor currently
   * hearteRead: 
-  * gpsRead:
+  * gpsReadLong: 
+  * gpsReadLat:
+  * timeStamp:
   * 
-  * Variables Output: N/a
+  * Variables Output: The data is transmited onto the Serial Bus.
   * 
   * LAST EDIT: Novemeber, 18,2019
   */
-void opCode(int ArduinoID,int gasRead, int heartRead, int gpsReadLong, int gpsReadLat){
+void opCode(int ArduinoID,int gasDetect, int gasRead, int heartRead, int gpsReadLong, int gpsReadLat, unsigned long timeStamp){
     Serial.print(ArduinoID, DEC);
-    Serial.print(gasRead, DEC);
+    Serial.print("-");
+    Serial.print(timeStamp, DEC);
+    Serial.print("-");
     Serial.print(heartRead, DEC);
-    Serial.print(gpsReadLong, DEC);
+    Serial.print("-");
+    Serial.print(gasDetect, DEC);
+    Serial.print("-");
+    Serial.print(gasRead, DEC);
+    Serial.print("-");
     Serial.print(gpsReadLat, DEC);
-    Serial.print("XXXX"); //Transmission Ending
-    Serial.println();
+    Serial.print("-");
+    Serial.print(gpsReadLong, DEC);
+    Serial.print("\n");
   }
