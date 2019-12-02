@@ -2,7 +2,7 @@
 #include "SoftwareSerial.h"
 
 SoftwareSerial serial_connection(0,1);//RX=pin0  TX=pin1
-TinyGPSPlus gps;//GPS object that willdo all grunt work with NMEA
+TinyGPSPlus gps;//GPS object that will do all grunt work with NMEA
 
 void setup() {
   // put your setup code here, to run once:
