@@ -21,11 +21,15 @@ public class udpSender {
     
     public udpSender() {
         // Constructor
+    	try {
+			socket = new DatagramSocket();
+		}  catch (Exception ex) {
+            System.out.println(ex);
+        }
     }
 
-    private void sendPacket(DatagramPacket packet, int port) {
+    public void sendPacket(DatagramPacket packet) {
         try {
-            socket = new DatagramSocket(port);
             socket.send(packet);
             System.out.println("Packet sent!");
         } catch (IOException ex) {

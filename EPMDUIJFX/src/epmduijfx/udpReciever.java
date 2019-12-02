@@ -17,31 +17,39 @@ import java.util.logging.Logger;
 public class udpReciever {
 
     public final static int PACKETSIZE = 100;
-    private DatagramSocket socket;
-    public static byte[] packetData;
-
+    public DatagramPacket packet;
+    private int port;
+    DatagramSocket socket;
+    
     public udpReciever(int port) {
+    	this.port = port;
         try {
             // construct the socket
-            socket = new DatagramSocket(port);
-        } catch (SocketException ex) {
-            Logger.getLogger(udpReciever.class.getName()).log(Level.SEVERE, null, ex);
+            DatagramSocket socket = new DatagramSocket(port);
+            this.socket = socket;
+        } catch (SocketException e) {
+            System.out.println(e);
         }
     }
 
-    public void recieve(int port) {
+    public void recieve() {
         try {
             System.out.println("Receiving on port " + port);
             DatagramPacket packet = new DatagramPacket(new byte[PACKETSIZE], PACKETSIZE);
             socket.receive(packet);
 
             //Make the packet data accessible from any class.
-            packetData = packet.getData();
+            this.packet = packet;
             //For Testing Purposes
             System.out.println(packet.getAddress() + " " + packet.getPort() + ": " + new String(packet.getData()).trim());
+            
 
         } catch (IOException e) {
             System.out.println(e);
         }
+    }
+    
+    public DatagramPacket getPacket() {
+    	return packet;
     }
 }

@@ -1,13 +1,7 @@
 package epmduijfx;
 
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Time;
+import java.sql.*;
 import java.time.LocalTime;
 
 public class DatabaseHandler {
@@ -44,7 +38,7 @@ public class DatabaseHandler {
 		}
 	}
 
-	public void add(int id, LocalTime t, int bpm, int ppm, float latitude, float longitude) {
+	public void add(int id, java.sql.Time t, int bpm, int ppm, float latitude, float longitude) {
 		String db = "jdbc:sqlite:C:/sqlite/data";
 		
 		String comm = "INSERT INTO personnel" + id + "(time, bpm, ppm, latitude, longitude) VALUES(?,?,?,?,?)";
@@ -53,13 +47,13 @@ public class DatabaseHandler {
 			path = DriverManager.getConnection(db); 
             PreparedStatement command = path.prepareStatement(comm);  
             
-            command.setTime(1, java.sql.Time.valueOf(t));  
+            command.setTime(1, t);  
             command.setInt(2, bpm);
             command.setInt(3, ppm);
             command.setFloat(4, latitude);
             command.setFloat(5, longitude);
             command.executeUpdate();  
-            System.out.println("Updated successfully.");
+            System.out.println("personnel" + id + " updated successfully.");
         } catch (SQLException e) {  
             System.out.println(e.getMessage());  
         } 

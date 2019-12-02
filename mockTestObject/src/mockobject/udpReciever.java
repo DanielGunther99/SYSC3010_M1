@@ -18,10 +18,12 @@ public class udpReciever {
 
     public final static int PACKETSIZE = 100;
     private DatagramSocket socket;
-    public static byte[] packetData;
-
+    public DatagramPacket packet;
+    private int  port;
+    
     public udpReciever(int port) {
         try {
+        	this.port = port;
             // construct the socket
             socket = new DatagramSocket(port);
         } catch (SocketException ex) {
@@ -29,14 +31,14 @@ public class udpReciever {
         }
     }
 
-    public void recieve(int port) {
+    public void recieve() {
         try {
             System.out.println("Receiving on port " + port);
             DatagramPacket packet = new DatagramPacket(new byte[PACKETSIZE], PACKETSIZE);
             socket.receive(packet);
 
             //Make the packet data accessible from any class.
-            packetData = packet.getData();
+            this.packet = packet;
             //For Testing Purposes
             System.out.println(packet.getAddress() + " " + packet.getPort() + ": " + new String(packet.getData()).trim());
 

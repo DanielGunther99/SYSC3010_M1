@@ -1,8 +1,13 @@
 package mockobject;
 
-import java.net.DatagramPacket;
+import java.net.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.sql.Time;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalTime;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -15,30 +20,43 @@ import mockobject.udpSender;
  */
 public class MockObject {
 
-    private int TestPort;
+    private int testPort;
+    private int hostPort;
     private InetAddress host;
     private final int PACKETSIZE = 100;
     private int stubHR = 50;
-    private int stubLong = 0;
-    private int stubLat = 0;
+    private float stubLong = 0;
+    private float stubLat = 0;
     private int stubGas = 0;
+    private int seqID = 0;
+    private String identifier = "test";
     private boolean countup = true;
+    private java.sql.Time t;
+    private udpSender sender;
+    private int id = 1;
+    DateFormat dateFormat = new SimpleDateFormat("hh:mm:ss");
     
-    public MockObject(int TestPort) {
+    public MockObject(int hostPort, int testPort) {
         // constructor
-        this.TestPort = TestPort; 
+        this.testPort = testPort; 
+        this.hostPort = hostPort;
+        try {
+			t = new java.sql.Time(dateFormat.parse("00:00:00").getTime());
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
         try {
             host = InetAddress.getLocalHost();
-            udpReciever reciever = new udpReciever(TestPort);
-            udpSender sender = new udpSender();
-
-            //DatagramPacket packet = new DatagramPacket(data, data.length, host, TestPort);
-        } catch (UnknownHostException ex) {
+            sender = new udpSender(testPort);
+        } catch (Exception ex) {
             Logger.getLogger(MockObject.class.getName()).log(Level.SEVERE, null, ex);
         }
-
     }
     
+    public int getSeqID() {
+    	seqID++;
+    	return seqID;
+    }
     /**
      * stub heart rate will increase from 50 to 120 then decrease back to 50
      * @return stub heart rate
@@ -58,12 +76,12 @@ public class MockObject {
         }   
         return stubHR;
     }
-    public int getLat() {
+    public float getLat() {
         stubLat += 10;
         return stubLat;
     }
     
-    public int getLong() {
+    public float getLong() {
         stubLong += 5;
         return stubLong;
     }
@@ -87,14 +105,22 @@ public class MockObject {
         stubGas = 0;
     }
     
+    // Starts counting from 00:00:00
+    public java.sql.Time getTime() {
+    	long t1 = t.getTime();
+    	t1 += 1000;
+    	t.setTime(t1);
+    	return t;
+    }
+    
     /**
      * sends stub data to server Pi for testing purposes
      */
     public void sendData() {
-        String toSend = Integer.toString(getHR()) + Integer.toString(getLat()) + Integer.toString(getLong()) + Integer.toString(getGas());
+        String toSend = Integer.toString(getSeqID()) + "-" + identifier + "-" + id + "-" + getTime() + "-" + Integer.toString(getHR()) + "-" + Integer.toString(getGas()) + "-" + Float.toString(getLong()) + "-" + Float.toString(getLat());
         byte[] b = toSend.getBytes();
-        DatagramPacket packet = new DatagramPacket(b, b.length, host, TestPort);
-        System.out.println("Stub data sent.");
+        DatagramPacket packet = new DatagramPacket(b, b.length, host, testPort);
+        sender.sendPacket(packet);
     }
     /**
      * Simulates an app requesting to connect
