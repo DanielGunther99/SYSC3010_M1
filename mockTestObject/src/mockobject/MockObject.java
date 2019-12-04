@@ -20,8 +20,8 @@ import mockobject.udpSender;
  */
 public class MockObject {
 
-    private int testPort;
     private int hostPort;
+    private int destPort;
     private InetAddress host;
     private final int PACKETSIZE = 100;
     private int stubHR = 50;
@@ -33,13 +33,14 @@ public class MockObject {
     private boolean countup = true;
     private java.sql.Time t;
     private udpSender sender;
+    private udpReciever reciever;
     private int id = 1;
     DateFormat dateFormat = new SimpleDateFormat("hh:mm:ss");
     
-    public MockObject(int hostPort, int testPort) {
+    public MockObject(int hostPort, int destPort) {
         // constructor
-        this.testPort = testPort; 
         this.hostPort = hostPort;
+        this.destPort = destPort;
         try {
 			t = new java.sql.Time(dateFormat.parse("00:00:00").getTime());
 		} catch (ParseException e) {
@@ -47,7 +48,8 @@ public class MockObject {
 		}
         try {
             host = InetAddress.getLocalHost();
-            sender = new udpSender(testPort);
+            sender = new udpSender();
+            reciever = new udpReciever(hostPort);
         } catch (Exception ex) {
             Logger.getLogger(MockObject.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -117,11 +119,25 @@ public class MockObject {
      * sends stub data to server Pi for testing purposes
      */
     public void sendData() {
-        String toSend = Integer.toString(getSeqID()) + "-" + identifier + "-" + id + "-" + getTime() + "-" + Integer.toString(getHR()) + "-" + Integer.toString(getGas()) + "-" + Float.toString(getLong()) + "-" + Float.toString(getLat());
+    	seqID = getSeqID();
+        String toSend = Integer.toString(seqID) + "-" + identifier + "-" + id + "-" + getTime() + "-" + Integer.toString(getHR()) + "-" + Integer.toString(getGas()) + "-" + Float.toString(getLong()) + "-" + Float.toString(getLat());
         byte[] b = toSend.getBytes();
-        DatagramPacket packet = new DatagramPacket(b, b.length, host, testPort);
+        DatagramPacket packet = new DatagramPacket(b, b.length, host, destPort);
         sender.sendPacket(packet);
     }
+    
+    public boolean recieveACK() {
+    	reciever.recieve();
+    	DatagramPacket packet = reciever.getPacket();
+    	String str = new String(packet.getData()).trim();
+    	String expected = seqID + "-" + identifier;
+    	
+    	if (str.equals(expected)) {
+    		return true;
+    	}
+    	return false;
+    }
+    
     /**
      * Simulates an app requesting to connect
      */

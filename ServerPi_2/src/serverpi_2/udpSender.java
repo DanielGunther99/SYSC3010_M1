@@ -1,9 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-package mockobject;
+package serverpi_2;
 
 import java.io.IOException;
 import java.net.*;
@@ -24,11 +19,11 @@ public class udpSender {
         try {
             socket = new DatagramSocket();
         } catch (Exception ex) {
-            Logger.getLogger(MockObject.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println(ex);
         }
     }
 
-    void sendPacket(DatagramPacket packet) {
+    public void sendPacket(DatagramPacket packet) {
         try {
             socket.send(packet);
             System.out.println("Packet sent on " + packet.getPort());
