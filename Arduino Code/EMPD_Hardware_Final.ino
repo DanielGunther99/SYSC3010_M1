@@ -8,27 +8,31 @@
  * played around with fake gps data
  * ADDING IN TIME FUNCTIONALITY
  * 
- * LAST FILE EDIT: December, 2,2019
+ * LAST FILE EDIT: December, 5,2019
  */
-//STUB TESTING (SET TO 1 IF USING STUB)
-int smokeTEST = 0;
-int heartTEST = 0;
-int gpsTEST = 0;
-
-//DRIVER TEST
+//Mandatory Includes
+#include <Adafruit_GPS.h>
+#include <SoftwareSerial.h>
 
  
+//STUB TESTING (SET TO 1 IF USING STUB)
+int smokeTEST = 0;
+int heartTEST = 1; //CURRENTLY SENDING FAKE HEART RATE DATA BECAUSE SENSOR IS NOT HERE
+int gpsTEST = 0;
+
 //ARDUINO ID
 #define ARDUINO_ID 0 //the ID of the arduino being used (Just in case if multiple Arduino's)
  
 //Allowing the Sensor Analog input to be changed
 #define GAS_SENSOR 0 //Analog Input for Gas Sensor
 #define HEART_SENSOR A1; //Analog Input for Heart Rate Sensor
+#define FAN 2; //Output Pin For Fan
 
 //Initalising the Basic Variables to be Used By the Code
 int arduinoID = ARDUINO_ID;
 int gasSensor = GAS_SENSOR;
 int heartSensor = HEART_SENSOR
+int fan = FAN;
 
 //Smoke Sensor Variables
 int smokeReading = 0;
@@ -41,9 +45,23 @@ int beatThreshold = 350;
 bool beatCounted = false;
 int beatCounter = 0;
 
-//GPS Sensor Variables CURRENTLY USING FAKE DATA*****************************
-int personLong = 0;
-int personLat = 0;
+//GPS Sensor Variables
+SoftwareSerial mySerial(8, 7);
+Adafruit_GPS GPS(&mySerial);
+#define GPSECHO  false
+
+float personLong = 0;
+float personLat = 0;
+
+uint8_t personHour;
+uint8_t personMin;
+uint8_t personSec;
+
+uint8_t personDay;
+uint8_t personMonth;
+uint8_t personYear;
+
+uint32_t timer = millis();
 
 //OPCode Variables
 int heartRate = 0;
@@ -62,6 +80,12 @@ unsigned long arduinoRunTime;
 void setup() {
   Serial.begin(9600); // initialize serial communication at 9600 bits per second
   pinMode(heartSensor,INPUT); //initialize Heart Rate Sensor
+  pinMode(fan, OUTPUT); //Set pin as output for fan
+  //GPS Sensor Initalisation
+  GPS.begin(9600);
+  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
+  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);
+  mySerial.println(PMTK_Q_RELEASE);
 }
 
 /**
@@ -77,9 +101,24 @@ void setup() {
 void loop() {
   smokeDetect = Gas_Sensor(); //Smoke Detection Reading
   heartRate = Heart_Rate(); //Heart Rate Reading
-  GPS();
-  arduinoRunTime = millis();
-  opCode(arduinoID, smokeDetect, smokeReading, heartRate, personLong, personLat, arduinoRunTime); //Generate OPCODE and send it over the SerialPort
+
+  //Running the GPS
+  char c = GPS.read();
+  if ((c) && (GPSECHO))
+    Serial.write(c);
+  if (GPS.newNMEAreceived()) {
+    if (!GPS.parse(GPS.lastNMEA()))
+      return;  
+  }
+
+  // if millis() or timer wraps around, we'll just reset it
+  if (timer > millis())  timer = millis();
+
+  // approximately every 2 seconds or so, print out the current stats
+  if (millis() - timer > 2000) {
+    timer = millis(); // reset the timer
+    GPSA(); //GPS Reading
+  }
 }
 
 /**
@@ -101,7 +140,11 @@ int Gas_Sensor(){
   }
   
   //If the sensor reading is above 200, there is a fire
-  if(smokeReading >= 200)return 1;
+  if(smokeReading >= 200){
+    digitalWrite(fan, HIGH);
+    return 1;
+  }
+  if(smokeReading < 200) digitalWrite(fan, LOW); 
   return 0;
 }
 
@@ -113,22 +156,33 @@ int Gas_Sensor(){
   * Variables Input: N/a
   * Variables Output: Returns the current heart rate of the person.
   * 
-  * LAST EDIT: December, 2,2019
+  * LAST EDIT: December, 5,2019
   */
 int Heart_Rate(){
-  currTime = millis();      
-  beatCounter = 0;
-  while(millis() < currTime + 10000){ //collect heartbeat for 10 seconds
-    sensorValue = analogRead(heartSensor); 
+  currTime = millis();
 
-    //If the sensor picks up analog reading greater than threshold (heartbeat)
-    if(sensorValue > beatThreshold && !beatThreshold){
-      beatCounter++; 
-      beatThreshold = true;
+  //Real Heart Rate Sensor Code
+  if(heartTEST == 0){
+    beatCounter = 0;
+    while(millis() < currTime + 10000){ //collect heartbeat for 10 seconds
+      sensorValue = analogRead(heartSensor); 
+  
+      //If the sensor picks up analog reading greater than threshold (heartbeat)
+      if(sensorValue > beatThreshold && !beatThreshold){
+        beatCounter++; 
+        beatThreshold = true;
+      }
+      //If sensor picks up reading below threshold (noise)
+      if(sensorValue < beatThreshold) beatThreshold = false;
     }
-    //If sensor picks up reading below threshold (noise)
-    if(sensorValue < beatThreshold) beatThreshold = false;
   }
+
+  //Fake Heart Rate Sensor Data
+  if(heartTEST == 1){
+    beatCounter++;
+    if(beatCounter < 40 || beatCounter > 80) beatCounter = 40;
+  }
+  
   return beatCounter;
 }
 
@@ -141,10 +195,72 @@ int Heart_Rate(){
   * 
   * LAST EDIT: Novemeber, 18,2019
   */
-void GPS(){
-  personLong = 0; //CURRENTLY USING FAKE DATA*****************************
-  personLat = 0; //CURRENTLY USING FAKE DATA*****************************
+void GPSA(){
+    
+    //Serial.print(GPS.hour, DEC); Serial.print(':');
+    //Serial.print(GPS.minute, DEC); Serial.print(':');
+    //Serial.print(GPS.seconds, DEC);
+  
+    //Serial.print("Date: ");
+    //Serial.print(GPS.day, DEC); Serial.print('/');
+    //Serial.print(GPS.month, DEC); Serial.print("/20");
+    //Serial.println(GPS.year, DEC);
+    if (gpsTEST==0) {
+      int reallat1=(GPS.latitude/100);
+      float reallat2 =(GPS.latitude-(reallat1*100))/60;
+      float reallat = reallat1+reallat2;
+      int reallon1=(GPS.longitude/100);
+      float reallon2 =(GPS.longitude-(reallon1*100))/60;
+      float reallon = reallon1+reallon2;
+      if(GPS.lat=='S'){
+        reallat=reallat*-1;
+      }
+       if(GPS.lon=='W'){
+        reallon=reallon*-1;
+      }
+      
+      //Long and Lat of person
+      personLong = reallon;
+      personLat = reallat;
+
+      //Current Transmission Time
+      personHour = GPS.hour;
+      personMin = GPS.minute;
+      personSec = GPS.seconds;
+
+      //Current Transmission Date
+      personDay = GPS.day;
+      personMonth = GPS.month;
+      personYear = GPS.year;
+            
+      //SATILITE FIX PRINT
+      //Serial.print("Location: ");
+      //Serial.print(reallat,4);//gps.latitude=numerical values. gps.lat =bearing
+      //Serial.print(", ");
+      //Serial.println(reallon,4);
+      //Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
+    }
+
+  if(gpsTEST == 1){
+    //Long and Lat of person
+      personLong = 1;
+      personLat = 1;
+
+      //Current Transmission Time
+      personHour = 1;
+      personMin = 1;
+      personSec = 1;
+
+      //Current Transmission Date
+      personDay = 1;
+      personMonth = 1;
+      personYear = 1;
   }
+
+  //OpCode Generated
+      opCode(arduinoID, smokeDetect, smokeReading, heartRate); //Generate OPCODE and send it over the SerialPort
+  
+}
 
 /**
   * OPCODE (UNDER DEVELOPMENT):
@@ -165,19 +281,35 @@ void GPS(){
   * 
   * LAST EDIT: Novemeber, 18,2019
   */
-void opCode(int ArduinoID,int gasDetect, int gasRead, int heartRead, int gpsReadLong, int gpsReadLat, unsigned long timeStamp){
-    Serial.print(ArduinoID, DEC);
-    Serial.print("-");
-    Serial.print(timeStamp, DEC);
-    Serial.print("-");
+void opCode(int ArduinoID,int gasDetect, int gasRead, int heartRead){
+    Serial.print(ArduinoID, DEC); 
+    Serial.print("_");
     Serial.print(heartRead, DEC);
-    Serial.print("-");
+    Serial.print("_");
     Serial.print(gasDetect, DEC);
-    Serial.print("-");
+    Serial.print("_");
     Serial.print(gasRead, DEC);
-    Serial.print("-");
-    Serial.print(gpsReadLat, DEC);
-    Serial.print("-");
-    Serial.print(gpsReadLong, DEC);
-    Serial.print("\n");
+    opCodeHelper();
   }
+
+
+void opCodeHelper(){
+    Serial.print("_");
+    Serial.print(personLat, DEC);
+    Serial.print("_");
+    Serial.print(personLong, DEC);
+    Serial.print("_");
+    Serial.print(personMonth, DEC);
+    Serial.print("_");
+    Serial.print(personDay, DEC);
+    Serial.print("_");
+    Serial.print(personYear, DEC);
+    Serial.print("_");
+    Serial.print(personHour, DEC);
+    Serial.print("_");
+    Serial.print(personMin, DEC);
+    Serial.print("_");
+    Serial.print(personSec, DEC);
+    Serial.print("\n");
+    
+}
