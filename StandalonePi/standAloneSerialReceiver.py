@@ -1,8 +1,14 @@
-import socket, sys, time, serial, json, sqlite3, datetime
-import standAlonePi as sap
+#SYSC3010_M1
+#Daniel Gunther
+#06-12-2019
 
-sap.setup()
+import socket, sys, time, json, sqlite3, datetime
+import standAlonePi2 as sap2
 
-while true:
-    sap.parseAdd(sap.serialDataCollect())
+#Starts the serial receiving process.
+sap2.setup()
+print("Receiving on serial")
+while True:
+    sap2.parseAdd(sap2.serialDataCollect())
+    time.sleep(5)
     
