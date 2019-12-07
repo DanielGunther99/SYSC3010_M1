@@ -5,16 +5,14 @@
  * via serial connection. Once the data is recieved, the data will then be transmited 
  * to a paired Raspberry Pi for further processing.
  * 
- * played around with fake gps data
- * ADDING IN TIME FUNCTIONALITY
+ * All Sensors now working
  * 
- * LAST FILE EDIT: December, 5,2019
+ * LAST FILE EDIT: December, 6,2019
  */
 //Mandatory Includes
 #include <Adafruit_GPS.h>//for gps
 #include <SoftwareSerial.h>
 
- 
 //STUB TESTING (SET TO 1 IF USING STUB)
 int smokeTEST = 0;
 int heartTEST = 1; //CURRENTLY SENDING FAKE HEART RATE DATA BECAUSE SENSOR IS NOT HERE
@@ -49,18 +47,14 @@ int beatCounter = 0;
 SoftwareSerial mySerial(8, 7);
 Adafruit_GPS GPS(&mySerial);
 #define GPSECHO  false
-
 float personLong = 0;
 float personLat = 0;
-
 uint8_t personHour;
 uint8_t personMin;
 uint8_t personSec;
-
 uint8_t personDay;
 uint8_t personMonth;
 uint8_t personYear;
-
 uint32_t timer = millis();
 
 //OPCode Variables
@@ -75,12 +69,13 @@ unsigned long arduinoRunTime;
  * Variables Input: N/a
  * Variables Output: N/a
  * 
- * LAST EDIT: Novemeber, 18,2019
+ * LAST EDIT: December, 6,2019
  */
 void setup() {
   Serial.begin(9600); // initialize serial communication at 9600 bits per second
   pinMode(heartSensor,INPUT); //initialize Heart Rate Sensor
   pinMode(fan, OUTPUT); //Set pin as output for fan
+  
   //GPS Sensor Initalisation
   GPS.begin(9600);
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
@@ -96,7 +91,7 @@ void setup() {
  * Variables Input: N/a
  * Variables Output: N/a
  * 
- * LAST EDIT: December, 2,2019
+ * LAST EDIT: December, 5,2019
  */
 void loop() {
   smokeDetect = Gas_Sensor(); //Smoke Detection Reading
@@ -111,10 +106,10 @@ void loop() {
       return;  
   }
 
-  // if millis() or timer wraps around, we'll just reset it
+  // if millis() or timer wraps around, just reset it
   if (timer > millis())  timer = millis();
 
-  // approximately every 2 seconds or so, print out the current stats
+  // approximately every 2 seconds, print out the current stats
   if (millis() - timer > 2000) {
     timer = millis(); // reset the timer
     GPSA(); //GPS Reading
@@ -128,7 +123,7 @@ void loop() {
   * Variables Input: N/a
   * Variables Output: Returns 1 if there is smoke detected and returns 0 if there is no smoke.
   * 
-  * LAST EDIT: December, 2,2019
+  * LAST EDIT: December, 6,2019
   */
 int Gas_Sensor(){
   //REAL CODE RUNNING
@@ -187,24 +182,16 @@ int Heart_Rate(){
 }
 
 /**
-  * GPS (UNDER DEVELOPMENT):
+  * GPSA:
   * This function will display date, time and location of the emergency responder. the stub test uses the gps time and date data
-  * but has simulated coordinates that update.  * 
+  * but has simulated coordinates that update.
   * Variables Input: N/a
   * Variables Output: N/a
   * 
-  * LAST EDIT: Novemeber, 18,2019
+  * LAST EDIT: December, 6,2019
   */
 void GPSA(){
-    
-    //Serial.print(GPS.hour, DEC); Serial.print(':');
-    //Serial.print(GPS.minute, DEC); Serial.print(':');
-    //Serial.print(GPS.seconds, DEC);
-  
-    //Serial.print("Date: ");
-    //Serial.print(GPS.day, DEC); Serial.print('/');
-    //Serial.print(GPS.month, DEC); Serial.print("/20");
-    //Serial.println(GPS.year, DEC);
+    //Using Sensor Input
     if (gpsTEST==0) {
       int reallat1=(GPS.latitude/100);                //converts to degrees minutes from degrees minutes seconds
       float reallat2 =(GPS.latitude-(reallat1*100))/60;
@@ -236,7 +223,7 @@ void GPSA(){
       //OpCode Generated
       opCode(arduinoID, smokeDetect, smokeReading, heartRate, personLat, personLong); //Generate OPCODE and send it over the SerialPort
     }
-
+  //Fake data for the GPS
   if(gpsTEST == 1){
       //simulated long and Lat of person
       float personLat=43.1583;
@@ -244,7 +231,7 @@ void GPSA(){
 
       int ran=random(3);
       int ran2=random(3);
-      if(ran==0){                     //randomly incrimenting lat and long
+      if(ran==0){ //randomly incrimenting lat and long
         personLat =  personLat+0.0001;
       }
       if(ran==1){
@@ -280,15 +267,15 @@ void GPSA(){
   * 
   * Variables Input: 
   * ArduinoID: The ID of the current Ardino so the firefighter can be Identified
-  * gasRead: The reading of the gas sensor currently
-  * hearteRead: 
-  * gpsReadLong: 
-  * gpsReadLat:
-  * timeStamp:
+  * GasDetect: Determining if gas is present in the system.
+  * gasRead: The reading of the gas sensor currently.
+  * hearteRead:The reading of the hear rate currently.
+  * lat: Latitude coordiate of the person. 
+  * lon: Longtitude coordinate of the person.
   * 
   * Variables Output: The data is transmited onto the Serial Bus.
   * 
-  * LAST EDIT: Novemeber, 18,2019
+  * LAST EDIT: Decemeber, 6,2019
   */
 void opCode(int ArduinoID,int gasDetect, int gasRead, int heartRead, float lat, float lon){
     Serial.print(ArduinoID, DEC); 
@@ -315,5 +302,4 @@ void opCode(int ArduinoID,int gasDetect, int gasRead, int heartRead, float lat, 
     Serial.print("_");
     Serial.print(lat, 4);
     Serial.print("\n");
-    
 }
