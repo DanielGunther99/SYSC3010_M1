@@ -1,5 +1,5 @@
 /***
- * Vishal Ghaie, John Singer
+ * Vishal Ghaie
  * 
  * The Gas sensor detects the smoke entering a mask for emergency personel. The sensor takes 20 seconds to turn on.
  * The sensor currently is detecting smoke and for Debug purposes, it prints via the serial port the current reading and if the 
